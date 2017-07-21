@@ -1,10 +1,13 @@
 package com.suhaili.a15017519.p09_gettingmylocations;
 
+import android.Manifest;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AppCompatActivity;
@@ -20,6 +23,15 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,12 +46,59 @@ public class MainActivity extends AppCompatActivity implements
     TextView tvLat,tvLng;
     Button btnStart,btnStop,btnCheck;
     String folderLocation;
+    private GoogleMap map;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Double lat = mLocation.getLatitude();
+        Double lng = mLocation.getLongitude();
+        final LatLng a = new LatLng(lat,lng);
+
+        FragmentManager fm = getSupportFragmentManager();
+        SupportMapFragment mapFragment = (SupportMapFragment)
+                fm.findFragmentById(R.id.map);
+
+
+        mapFragment.getMapAsync(new OnMapReadyCallback() {
+
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                map = googleMap;
+
+
+                final Marker nhq = map.addMarker(new
+                        MarkerOptions()
+                        .position(a)
+                        .title("Current Location")
+                        .snippet("Current Location")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(a, 11));
+                UiSettings ui = map.getUiSettings();
+                ui.setCompassEnabled(true);
+
+                ui.setZoomControlsEnabled(true);
+                int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
+                        android.Manifest.permission.ACCESS_FINE_LOCATION);
+
+
+                if (permissionCheck == PermissionChecker.PERMISSION_GRANTED) {
+                    map.setMyLocationEnabled(true);
+                } else {
+                    Log.e("GMap - Permission", "GPS access has not been granted");
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 0);
+                    return;
+                }
+
+            }
+        });
+
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -136,13 +195,9 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         if (mLocation != null) {
-            tvLat.setText("Lattitude: "+mLocation.getLatitude());
-            tvLng.setText("Lattitude: "+mLocation.getLongitude());
+            tvLat.setText("Lattitude: " + mLocation.getLatitude());
+            tvLng.setText("Lattitude: " + mLocation.getLongitude());
 
-
-        } else {
-            Toast.makeText(this, "Location not Detected",
-                    Toast.LENGTH_SHORT).show();
         }
 
     }
